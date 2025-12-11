@@ -64,61 +64,61 @@ def plot_results1(
         bbox_inches="tight",
     )
 
-    # LOSS TEST
-    fig, axis = plt.subplots(1, 1)
-    plot_figure(axis, c_rs, results["mot_loss_test"], color=mot_color, label="MOT")
-    plot_figure(
-        axis, c_rs, results["kl_loss_test"], color=kl_color, label="Kullback-Leibler"
-    )
-    plot_figure(
-        axis, c_rs, results["wass_loss_test"], color=wass_color, label="Wasserstein"
-    )
-    axis.legend()
-    plt.yscale("log")
-    plt.grid(alpha=0.2)
-    plt.title("Test Loss")
-    plt.xlabel("$r$")
-    plt.show()
-    fig.savefig(
-        (
-            "figures/loss_test_" + name_file + save_name_format + save_format
-        ).format(
-            d,
-            N,
-            p,
-            replications,
-        ),
-        format=save_format,
-        bbox_inches="tight",
-    )
+    # # LOSS TEST
+    # fig, axis = plt.subplots(1, 1)
+    # plot_figure(axis, c_rs, results["mot_loss_test"], color=mot_color, label="MOT")
+    # plot_figure(
+    #     axis, c_rs, results["kl_loss_test"], color=kl_color, label="Kullback-Leibler"
+    # )
+    # plot_figure(
+    #     axis, c_rs, results["wass_loss_test"], color=wass_color, label="Wasserstein"
+    # )
+    # axis.legend()
+    # plt.yscale("log")
+    # plt.grid(alpha=0.2)
+    # plt.title("Test Loss")
+    # plt.xlabel("$r$")
+    # plt.show()
+    # fig.savefig(
+    #     (
+    #         "figures/loss_test_" + name_file + save_name_format + save_format
+    #     ).format(
+    #         d,
+    #         N,
+    #         p,
+    #         replications,
+    #     ),
+    #     format=save_format,
+    #     bbox_inches="tight",
+    # )
 
-    # LOSS TRAIN
-    fig, axis = plt.subplots(1, 1)
-    plot_figure(axis, c_rs, results["mot_loss_train"], color=mot_color, label="MOT")
-    plot_figure(
-        axis, c_rs, results["kl_loss_train"], color=kl_color, label="Kullback-Leibler"
-    )
-    plot_figure(
-        axis, c_rs, results["wass_loss_train"], color=wass_color, label="Wasserstein"
-    )
-    axis.legend()
-    plt.yscale("log")
-    plt.grid(alpha=0.2)
-    plt.title("Train Loss")
-    plt.xlabel("$r$")
-    plt.show()
-    fig.savefig(
-        (
-            "figures/loss_train_" + name_file + save_name_format + save_format
-        ).format(
-            d,
-            N,
-            p,
-            replications,
-        ),
-        format=save_format,
-        bbox_inches="tight",
-    )
+    # # LOSS TRAIN
+    # fig, axis = plt.subplots(1, 1)
+    # plot_figure(axis, c_rs, results["mot_loss_train"], color=mot_color, label="MOT")
+    # plot_figure(
+    #     axis, c_rs, results["kl_loss_train"], color=kl_color, label="Kullback-Leibler"
+    # )
+    # plot_figure(
+    #     axis, c_rs, results["wass_loss_train"], color=wass_color, label="Wasserstein"
+    # )
+    # axis.legend()
+    # plt.yscale("log")
+    # plt.grid(alpha=0.2)
+    # plt.title("Train Loss")
+    # plt.xlabel("$r$")
+    # plt.show()
+    # fig.savefig(
+    #     (
+    #         "figures/loss_train_" + name_file + save_name_format + save_format
+    #     ).format(
+    #         d,
+    #         N,
+    #         p,
+    #         replications,
+    #     ),
+    #     format=save_format,
+    #     bbox_inches="tight",
+    # )
 
 
 def plot_results(
