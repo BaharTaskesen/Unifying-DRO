@@ -50,12 +50,14 @@ https://www.mosek.com/products/academic-licenses/
 ---
 ## Reproducing Experiments
 Each main experiment corresponds to one Python script:
-| Figure        | Script         | Description                                             |
-|---------------|----------------|---------------------------------------------------------|
-| **Fig. 1**    | `figure_1.py`  | SVM classification example and worst-case distribution  |
-| **Fig. 2(a)** | `figure_2a.py` | CCR vs ambiguity radius \(r\)                           |
-| **Fig. 2(b)** | `figure_2b.py` | MOT-DRO hyperparameter \(\theta_1\) sensitivity         |
-| **Fig. 2(c)** | `figure_2c.py` | CCR vs ratio \(n/d_x\)                                  |
+| Figure / Task           | Script / Notebook          | Description                                                              |
+|-------------------------|----------------------------|--------------------------------------------------------------------------|
+| **Fig. 1**              | `figure_1.py`              | SVM classification example and worst case distribution                   |
+| **Fig. 2(a)**           | `figure_2a.py`             | CCR vs ambiguity radius \(r\)                                            |
+| **Fig. 2(b)**           | `figure_2b.py`             | MOT DRO hyperparameter \(\theta_1\) sensitivity                          |
+| **Fig. 2(c)**           | `figure_2c.py`             | CCR vs ratio \(n/d_x\)                                                   |
+| **Result analysis**     | `analyse_results.ipynb`    | Loads saved `.npz` files, aggregates repetitions, and produces final CCR plots and summary figures used in the paper |
+
 
 
 Example run of an experiment:
