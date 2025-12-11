@@ -6,7 +6,7 @@ This repository contains the official implementation of the paper
 OPTIMAL TRANSPORT THEORY**  
 _by Jose Blanchet, Daniel Kuhn, Jiajin Li, and Bahar Tașkesen._
 
-Arxiv link of the paper: https://arxiv.org/abs/2308.05414
+Arxiv: https://arxiv.org/abs/2308.05414
 
 The code provides a unified implementation of several distributionally robust optimization (DRO) models, KL-DRO, Wasserstein-DRO, and the proposed **MOT-DRO** , together with scripts to reproduce all numerical experiments in the paper.
 
