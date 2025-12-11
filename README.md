@@ -8,7 +8,7 @@ _by Jose Blanchet, Daniel Kuhn, Jiajin Li, and Bahar Tașkesen._
 
 Arxiv link of the paper: https://arxiv.org/abs/2308.05414
 
-The code provides a unified implementation of several distributionally robust optimization (DRO) models, KL-DRO, Wasserstein-DRO, and the proposed **MOT-DRO**, together with scripts to reproduce all numerical experiments in the paper.
+The code provides a unified implementation of several distributionally robust optimization (DRO) models, KL-DRO, Wasserstein-DRO, and the proposed **MOT-DRO** , together with scripts to reproduce all numerical experiments in the paper.
 
 ---
 
@@ -20,7 +20,7 @@ This library implements DRO classifiers whose ambiguity sets are defined using:
 - **Wasserstein distance**
 - **MOT discrepancy** (joint $\phi$-divergence + optimal transport distance)
 
-All optimization problems are solved using **CVXPY** with the **MOSEK** solver.  
+All optimization problems are built using **CVXPY** with the **MOSEK** solver.  
 The experiments focus on robust linear classification in high-dimensional, sparse settings.
 
 ---
