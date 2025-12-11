@@ -1,68 +1,26 @@
 import numpy as np
-from sklearn.datasets import load_iris
 from matplotlib.colors import ListedColormap
-from sklearn.linear_model import LogisticRegression as LR_sklearn
 import matplotlib.pyplot as plt
-from sklearn.datasets import load_svmlight_file
-
-from scipy.sparse import vstack
 
 cm_piyg = plt.cm.PiYG
 cm_bright = ListedColormap(["#b30065", "#178000"])
 
 
-def load_MNIST(DIGITS, n_features):
-    idx = 0
-    n_class = 5000
-
-    Z1 = load_svmlight_file(
-        "datasets/MNIST_train_" + str(DIGITS[0]) + ".txt", n_features=n_features
-    )
-    Z2 = load_svmlight_file(
-        "datasets/MNIST_train_" + str(DIGITS[1]) + ".txt", n_features=n_features
-    )
-    X = (
-        vstack([Z1[0][idx : idx + n_class, :], Z2[0][idx : idx + n_class, :]]).toarray()
-        / 255
-    )
-    y = np.hstack([Z1[1][idx : idx + n_class], Z2[1][idx : idx + n_class]])
-    y = np.hstack([Z1[1][idx : idx + n_class], Z2[1][idx : idx + n_class]])
-
-    y[y == DIGITS[0]] = -1
-    y[y == DIGITS[1]] = 1
-    return X, y
-
-
-def prepare_data(d=2, N=100, sparse_beta=True, noise_mag=0.2):
+def prepare_data(d=2, N=100, sparse_beta=True, sparsity_degree=1, noise_mag=0.2):
     X = np.random.multivariate_normal(np.zeros(d), np.eye(d), N)
     if sparse_beta:
         beta_true = np.zeros(d)  # np.random.rand(d)
-        beta_true[0] = 1
+        beta_true[0:sparsity_degree] = np.random.rand(sparsity_degree)
     else:
         beta_true = np.random.rand(d)
 
-    y = np.zeros(N)
-    # add a standard normal noise when we have 2 norm
-    # shold
-    scores = 1 / (1 + np.exp(-beta_true @ X.T)) + noise_mag * np.random.standard_normal(
-        N
-    )
+    beta_true = beta_true / np.linalg.norm(beta_true, ord=2)
+    # x = np.random.randn(N, d)
+    y_true = np.matmul(X, beta_true)
+    y = y_true.flatten() + noise_mag * np.random.randn(N, 1).flatten()
 
-    y[scores >= 0.5] = 1
-    y[scores < 0.5] = -1
-    if d == 2:
-        fig = plt.figure()
-        plt.scatter(
-            X[:, 0],
-            X[:, 1],
-            c=y,
-            cmap=cm_bright,
-            edgecolors="k",
-            alpha=0.6,
-        )
-
-        # plt.tight_layout()
-        fig.savefig("vanilla-lr")
+    y[y >= 0] = 1
+    y[y < 0] = -1
 
     return X, y
 

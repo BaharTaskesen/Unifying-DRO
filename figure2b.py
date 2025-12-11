@@ -3,15 +3,12 @@ import numpy as np
 from matplotlib.colors import ListedColormap
 from sklearn.model_selection import train_test_split
 from models.MOT_Robust_CLF import MOT_Robust_CLF
-from models.WASS_Robust_CLF import WASS_Robust_CLF
-from models.KL_Robust_CLF import KL_Robust_CLF
 import matplotlib.pyplot as plt
 from matplotlib import colors as mcolors
 from tqdm import tqdm
 import numpy as np
-from utils.data_utils import load_MNIST, prepare_data
+from utils.data_utils import prepare_data
 from matplotlib import rc
-from theta1_cross_val import theta1_cross_val
 
 
 rc("font", family="serif")
@@ -42,12 +39,11 @@ theta1s = np.hstack([1 + np.logspace(-5, 0, 10), nmbrs[2:], 10, 1e2, 1e3, 1e4, 1
 ################################################################################
 c_r = 1e-1 * 5
 
-# DIGITS = [1, 8]
-n_features = N_train  # 784
+n_features = N_train  
 splits = theta1s.shape[0]
+sparsity = 1
 
-X, y = prepare_data(d=n_features, N=N_total, sparse_beta=True, noise_mag=0.1)
-# load_MNIST(DIGITS, n_features)
+X, y = prepare_data(d=n_features, N=N_total, sparse_beta=True, sparsity_degree=sparsity, noise_mag=0.1)
 mot_acc = np.zeros([splits, replications])
 
 
@@ -75,7 +71,7 @@ for rep in tqdm(range(replications)):
         mot_acc[i, rep] = perf
 
     np.savez(
-        "results/theta_performance_MNIST_theta_d_{}_N_{}_p_{}_reps_{}.npz".format(
+        "results/NEW_theta_performance_theta_d_{}_N_{}_p_{}_reps_{}.npz".format(
             n_features,
             N_train,
             p,

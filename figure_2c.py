@@ -24,22 +24,24 @@ colors = dict(mcolors.BASE_COLORS, **mcolors.CSS4_COLORS)
 
 #### Data
 np.random.seed(0)
-N_total = 10000
+
+
+N_total = 10_000
 replications = 10  # number of independent runs
 d = 100
 
-N_train_all = [d]
+N_train_all = [d, 2*d,  3*d, 4*d, 5*d]
+sparsity_degree = 25
+
 n_rs = 10
 p = "inf"
 noise_mag = 0.1
-c_rs = np.logspace(-5, 0, n_rs)  # The range of radius we are scanning
-# c_rs_kl = np.logspace(-1, 0, n_rs)
-################################################################################
+c_rs = np.logspace(-3, 0, n_rs)  # range of radius
+# ################################################################################
 nmbrs = np.arange(1, 10, 1)
-theta1s = np.hstack([1 + np.logspace(-5, 0, 10), nmbrs[2:], 10, 1e2, 1e3, 1e4, 1e5])
-################################################################################
-sparsity = 1 
-X, y = prepare_data(d=d, N=N_total, sparse_beta=True, sparsity_degree=sparsity, noise_mag=0.1)
+theta1s = np.hstack([1 + np.logspace(-4, 0, 10), nmbrs[2:], 10, 1e2, 1e3, 1e4, 1e5])
+# ################################################################################
+
 
 for N_train in N_train_all:
     mot_acc = np.zeros([n_rs, replications])
@@ -55,12 +57,18 @@ for N_train in N_train_all:
     kl_loss_test = np.zeros([n_rs, replications])
 
     for rep in tqdm(range(replications)):
-        SEED = rep
+        X, y = prepare_data(
+            d=d,
+            N=N_total,
+            sparsity_degree=sparsity_degree,
+            sparse_beta=True,
+            noise_mag=noise_mag,
+        )
         X_train, X_test, y_train, y_test = train_test_split(
-            X, y, train_size=N_train / N_total
+            X, y, train_size=N_train/N_total
         )
         clf_MOT = MOT_Robust_CLF(
-            fit_intercept=True, theta1=1, theta2=1, p=p, verbose=True
+            fit_intercept=True, theta1=1, theta2=1, p=p, verbose=False
         )
         clf_WASS = WASS_Robust_CLF(fit_intercept=True, p=p, verbose=False)
         clf_KL = KL_Robust_CLF(fit_intercept=True, verbose=False)
@@ -77,7 +85,7 @@ for N_train in N_train_all:
             wass_loss_train[i, rep] = clf_WASS.loss(X_train, y_train)
             wass_loss_test[i, rep] = clf_WASS.loss(X_test, y_test)
 
-            clf_KL.c_r = c_r * 100
+            clf_KL.c_r = c_r
             clf_KL.fit(X_train, y_train)
             kl_acc[i, rep] = clf_KL.score(X_test, y_test)
             kl_loss_train[i, rep] = clf_KL.loss(X_train, y_train)
@@ -87,16 +95,18 @@ for N_train in N_train_all:
     # SAVE results
 
     np.savez(
-        "results/NEW_results_simulation_d_{}_N_{}_p_{}_noise_mag_{}_reps_{}.npz".format(
+        "results/NEW_results_dn_simulation_d_{}_N_{}_p_{}_noise_mag_{}_sparsity_deg_{}_reps_{}.npz".format(
             d,
             N_train,
             p,
-            noise_mag * 10,
+            noise_mag*10,
+            sparsity_degree,
             replications,
         ),
         number_radius=n_rs,
         noise_mag=noise_mag,
         theta_splits=theta1s.shape[0],
+        sparsity_beta=sparsity_degree,
         d=d,
         radius_range=c_rs,
         mot_acc=mot_acc,

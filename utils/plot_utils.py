@@ -20,7 +20,7 @@ def plot_figure(plt, x, y, color="b", label=None, with_shade=True):
         plt.fill_between(x, mean_ - err_, mean_ + err_, alpha=0.1, facecolor=color)
 
 
-def plot_results_MNIST(
+def plot_results1(
     results,
     d,
     N,
@@ -30,7 +30,7 @@ def plot_results_MNIST(
     save_format="png",
 ):
     c_rs = results["radius_range"]
-    plt.rcParams.update({"font.size": 12})
+    # plt.rcParams.update({"font.size": 12})
 
     mot_color = colors["red"]
     wass_color = colors["limegreen"]
@@ -53,7 +53,7 @@ def plot_results_MNIST(
     save_name_format = "_d_{}_N_{}_p_{}_reps_{}."
     fig.savefig(
         (
-            "results/figures/acc_test_" + name_file + save_name_format + save_format
+            "figures/CCR_test_" + name_file + save_name_format + save_format
         ).format(
             d,
             N,
@@ -81,7 +81,7 @@ def plot_results_MNIST(
     plt.show()
     fig.savefig(
         (
-            "results/figures/loss_test_" + name_file + save_name_format + save_format
+            "figures/loss_test_" + name_file + save_name_format + save_format
         ).format(
             d,
             N,
@@ -109,7 +109,7 @@ def plot_results_MNIST(
     plt.show()
     fig.savefig(
         (
-            "results/figures/loss_train_" + name_file + save_name_format + save_format
+            "figures/loss_train_" + name_file + save_name_format + save_format
         ).format(
             d,
             N,
@@ -152,7 +152,7 @@ def plot_results(
 
     fig.savefig(
         (
-            "results/figures/acc_test_"
+            "figures/acc_test_"
             + name_file
             + "_sparse_beta_{}_d_{}_N_{}_p_{}_theta1_{}_theta2_{}_se_{}_ce_{}_reps_{}."
             + save_format
@@ -188,7 +188,7 @@ def plot_results(
     plt.show()
     fig.savefig(
         (
-            "results/figures/loss_test_"
+            "figures/loss_test_"
             + name_file
             + "_sparse_beta_{}_d_{}_N_{}_p_{}_theta1_{}_theta2_{}_se_{}_ce_{}_reps_{}."
             + save_format
@@ -224,7 +224,7 @@ def plot_results(
     plt.show()
     fig.savefig(
         (
-            "results/figures/loss_train_"
+            "figures/loss_train_"
             + name_file
             + "_sparse_beta_{}_d_{}_N_{}_p_{}_theta1_{}_theta2_{}_se_{}_ce_{}_reps_{}."
             + save_format

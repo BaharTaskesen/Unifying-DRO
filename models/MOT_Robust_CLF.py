@@ -4,9 +4,6 @@ DR Logistic Regression
 import numpy as np
 import cvxpy as cp
 import time
-from collections import namedtuple
-from sklearn.metrics import log_loss
-
 
 def logSumExp(ns):
     max = np.max(ns)
