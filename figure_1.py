@@ -12,7 +12,7 @@ N = 32
 beta_true = np.random.randn(d, 1)
 x = np.random.randn(N, d)
 y_true = np.matmul(x, beta_true)
-y = y_true # + np.random.randn(N, 1)
+y = y_true + 0.1 * np.random.randn(N, 1)
 label_1 = y >= 0
 label_0 = y < 0
 z = np.ones(N)
@@ -21,9 +21,6 @@ z = z/np.sum(z)
 y[y >= 0] = 1
 y[y < 0] = -1
 
-y_noisy = y + 0.1 * np.random.randn(N, 1)
-y_noisy[y_noisy >= 0] = 1
-y_noisy[y_noisy < 0] = -1
 
 ############## Empirical SVM ##############
 SVMModel = svm.SVC(kernel='linear').fit(x, y.ravel())
