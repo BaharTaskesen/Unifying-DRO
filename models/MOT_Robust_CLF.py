@@ -1,116 +1,124 @@
-"""
-DR Logistic Regression
-"""
 import numpy as np
 import cvxpy as cp
 import time
 
-def logSumExp(ns):
-    max = np.max(ns)
-    ds = ns - max
-    sumOfExp = np.exp(ds)
-    return max + np.log(sumOfExp)
-
 
 class MOT_Robust_CLF:
-    def __init__(
-        self, fit_intercept=False, theta1=1, theta2=1, c_r=0, p=2, verbose=False
-    ):
+    def __init__(self, fit_intercept=False, theta1=1.0, theta2=1.0, c_r=0.0, p=2, beta_constrained=False, verbose=False):
         self.fit_intercept = fit_intercept
-        self.theta1 = theta1
-        self.theta2 = theta2
-        self.c_r = c_r
+        self.theta1 = float(theta1)
+        self.theta2 = float(theta2)
+        self.c_r = float(c_r)
         self.p = p
         self.verbose = verbose
-        self.training_time = 0
+        self.beta_constrained = beta_constrained
+
         self.model_prepared = False
+        self.model_building_time = 0.0
+        self.param_fit_time = 0.0
 
     def fit(self, X, y):
-        if self.model_prepared:
-            self.param_fit()
-        else:
+        X = np.asarray(X, dtype=float)
+        y = np.asarray(y, dtype=float).reshape(-1)
+        if not self.model_prepared:
             self.prepare_model(X, y)
-            self.param_fit()
+        self.param_fit()
 
     def prepare_model(self, X, y):
         start_time = time.time()
-        N_train = X.shape[0]
-        dim = X.shape[1]
-        self.r = cp.Parameter(nonneg=True)
-        self.theta1_par = cp.Parameter(nonneg=True)
-        self.theta2_par = cp.Parameter(nonneg=True)
 
+        n, d = X.shape
+
+        # parameters 
+        self.r = cp.Parameter(nonneg=True, name="r")
+        self.theta1_par = cp.Parameter(nonneg=True, name="theta1")
+        self.theta2_par = cp.Parameter(nonneg=True, name="theta2")
+
+        # p to q
         if self.p == 1:
-            q = "inf"
+            q = np.inf
         elif self.p == 2:
             q = 2
-        elif self.p == "inf":
+        elif self.p == "inf" or self.p == np.inf:
             q = 1
+        else:
+            raise ValueError("p must be 1, 2, or 'inf'.")
 
-        # Decision variables
-        t = cp.Variable(1)
-        epig_ = cp.Variable([N_train, 1])
-        self.lambda_ = cp.Variable(1)
-        self.beta = cp.Variable(dim)
-        self.b = cp.Variable(1)
-        eta = cp.Variable([N_train, 1])
+        # decision variables
+        t = cp.Variable(name="t")                    # scalar
+        epig = cp.Variable(n, name="epig")           # length-n vector
+        self.lambda_ = cp.Variable(nonneg=True, name="lambda")
+        self.beta = cp.Variable(d, name="beta")
 
-        # Constraints
+        if self.fit_intercept:
+            self.b = cp.Variable(name="b")           # scalar
+        else:
+            self.b = cp.Constant(0.0)
+
+        eta = cp.Variable(n, nonneg=True, name="eta")  # length-n vector
+
         cons = []
-        cons.append(
-            cp.norm2(self.beta) <= 1
-        )  # Bounded SVM constraint from the original problem
-        cons.append(eta >= 0)
-        cons.append(self.lambda_ >= 0)
-        for i in range(N_train):
+        if self.beta_constrained:
             cons.append(
-                cp.constraints.exponential.ExpCone(
-                    epig_[i] - t, self.theta2 * self.lambda_, eta[i]
-                )
-            )
-            cons.append(cp.pos(1 - y[i] * (self.beta.T @ X[i, :] + self.b)) <= epig_[i])
-        cons.append(self.lambda_ * self.theta1 >= cp.norm(self.beta, q))
-        cons.append(N_train * self.lambda_ * self.theta2 >= cp.sum(eta))
-        self.obj = self.r * self.lambda_ + t
-        self.problem = cp.Problem(cp.Minimize(self.obj), cons)
+                cp.norm2(self.beta) <= 1
+            )  
+
+        # exponential cone constraints
+        for i in range(n):
+            cons += [cp.constraints.exponential.ExpCone(epig[i] - t,
+                                                       self.lambda_ * self.theta2_par,
+                                                       eta[i])]
+
+            # empirical hinge epigraph
+            cons += [cp.pos(1 - y[i] * (self.beta @ X[i, :] + self.b)) <= epig[i]]
+
+        cons += [cp.norm(self.beta, q) <= self.lambda_ * self.theta1_par]
+        # average eta constraint
+        cons += [cp.sum(eta) / n <= self.lambda_ * self.theta2_par]
+
+        # objective
+        obj = cp.Minimize(self.r * self.lambda_ + t)
+
+        self.problem = cp.Problem(obj, cons)
+        self._t = t
+        self._epig = epig
+        self._eta = eta
+        self._q = q
+
         self.model_prepared = True
-        stop_time = time.time()
-        self.model_building_time = stop_time - start_time
+        self.model_building_time = time.time() - start_time
 
     def param_fit(self):
-        """Can be only called after prepare_model"""
         start_time = time.time()
+
         self.r.value = self.c_r
         self.theta1_par.value = self.theta1
         self.theta2_par.value = self.theta2
+
         self.problem.solve(
             solver=cp.MOSEK,
-            mosek_params={"MSK_DPAR_INTPNT_CO_TOL_REL_GAP": 1e-8},
+            mosek_params={"MSK_DPAR_INTPNT_CO_TOL_REL_GAP": 1e-6},
             verbose=self.verbose,
         )
-        self.coef_ = self.beta.value
-        self.intercept_ = self.b.value
-        self.obj_opt = self.obj.value
-        stop_time = time.time()
-        self.param_fit_time = stop_time - start_time
+        # print(self.lambda_.value)
+        self.coef_ = np.array(self.beta.value).reshape(-1)
+        self.intercept_ = float(self.b.value) if isinstance(self.b, cp.Variable) else 0.0
+        self.obj_opt = float(self.problem.value)
+
+        self.param_fit_time = time.time() - start_time
 
     def loss(self, X, y):
-        loss = np.mean(
-            cp.pos(
-                1 - np.multiply(y.flatten(), self.coef_.T @ X.T + self.intercept_)
-            ).value
-        )
-        return loss
+        X = np.asarray(X, dtype=float)
+        y = np.asarray(y, dtype=float).reshape(-1)
+        scores = X @ self.coef_ + self.intercept_
+        return float(np.mean(np.maximum(0.0, 1.0 - y * scores)))
 
     def predict(self, X):
-        scores = self.coef_.T @ X.T + self.intercept_
-        preds = scores.copy()
-        preds[scores >= 0] = 1
-        preds[scores < 0] = -1
-        return preds
+        X = np.asarray(X, dtype=float)
+        scores = X @ self.coef_ + self.intercept_
+        return np.where(scores >= 0.0, 1.0, -1.0)
 
     def score(self, X, y):
-        # calculate accuracy of the given test data set
-        predictions = self.predict(X)
-        acc = np.mean([predictions.flatten() == y.flatten()])
-        return acc
+        y = np.asarray(y).reshape(-1)
+        preds = self.predict(X).reshape(-1)
+        return float(np.mean(preds == y))

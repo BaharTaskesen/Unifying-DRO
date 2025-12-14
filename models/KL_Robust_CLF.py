@@ -1,22 +1,17 @@
-"""
-KL-DR Logistic Regression
-"""
 import numpy as np
 import cvxpy as cp
 import time
-from collections import namedtuple
-from sklearn.metrics import log_loss
 
 
 loss_fcn = lambda beta, X, y: cp.pos(1 - y * beta.T @ X)
-"""DR-Bounded SVM model with KL divergence ambiguity set"""
 
 
 class KL_Robust_CLF:
-    def __init__(self, fit_intercept=False, c_r=0, verbose=False):
+    def __init__(self, fit_intercept=False, c_r=0, beta_constrained=False, verbose=False):
         self.fit_intercept = fit_intercept
         self.c_r = c_r
         self.verbose = verbose
+        self.beta_constrained=beta_constrained
         self.training_time = 0
         self.model_prepared = False
 
@@ -45,13 +40,15 @@ class KL_Robust_CLF:
         self.lambda_ = cp.Variable(1)
 
         cons = []
+        if self.beta_constrained:
+            cons.append(
+                cp.norm2(self.beta) <= 1
+            )  
 
         cons.append(self.lambda_ >= cp.sum(eta))
         cons.append(self.lambda_ >= 0)
         cons.append(eta >= 0)
-        cons.append(
-            cp.norm2(self.beta) <= 1
-        )  # Bounded SVM constraint from the original problem
+    
         for i in range(N_train):
             cons.append(
                 cp.constraints.exponential.ExpCone(epig_[i] - t, self.lambda_, eta[i])
@@ -71,7 +68,7 @@ class KL_Robust_CLF:
         self.r.value = self.c_r
         self.problem.solve(
             solver=cp.MOSEK,
-            mosek_params={"MSK_DPAR_INTPNT_CO_TOL_REL_GAP": 1e-6},
+            mosek_params={"MSK_DPAR_INTPNT_CO_TOL_REL_GAP": 1e-8},
             verbose=self.verbose,
         )
         self.coef_ = self.beta.value
@@ -99,5 +96,5 @@ class KL_Robust_CLF:
     def score(self, X, y):
         # calculate accuracy of the given test data set
         predictions = self.predict(X)
-        acc = np.mean([predictions.flatten() == y.flatten()])
+        acc = float(np.mean(predictions.reshape(-1) == y.reshape(-1)))
         return acc

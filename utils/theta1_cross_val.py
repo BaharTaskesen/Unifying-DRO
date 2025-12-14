@@ -1,45 +1,73 @@
 from sklearn.model_selection import KFold
 import numpy as np
+import copy
 
 
-def theta1_cross_val(clf, params, X, y):
-    kf = KFold(n_splits=params.shape[0], random_state=None, shuffle=True)
-    i = 0
-    performance = []
-    performance2 = []
-    clf_new = clf
-    clf_new.model_prepared = False
-    clf_new.theta2 = 1
+def theta2_from_theta1(theta1, big_M=1e6):
+    # Enforce 1/theta1 + 1/theta2 = 1 safely
+    if theta1 <= 1.0 + 1e-12:
+        return big_M
+    return theta1 / (theta1 - 1.0)  # same as 1/(1-1/theta1)
 
-    for i, (train_index, test_index) in enumerate(kf.split(X)):
-        clf_new.verbose = False
-        X_train = X[train_index, :]
-        y_train = y[train_index]
 
-        X_test = X[test_index, :]
-        y_test = y[test_index]
-        theta1 = params[i]
-        clf_new.theta1 = theta1
-        theta2 = 1 / (1 - 1 / theta1)
+def theta1_cross_val(clf, theta1_grid, X, y, n_folds=5, metric="acc", seed=0):
+    """
+    Proper CV for theta1:
+      - evaluates every theta1 on the same folds
+      - picks best mean metric
+      - refits a fresh clone on full (X,y) with chosen theta1
 
-        clf_new.theta2 = theta2
-        # print(theta2)
-        clf_new.fit(X_train, y_train)
+    metric: "acc" or "loss" (loss will be minimized)
+    """
+    X = np.asarray(X)
+    y = np.asarray(y).reshape(-1)
+    theta1_grid = np.asarray(theta1_grid, dtype=float)
 
-        score_ = clf_new.score(X_test, y_test)
-        performance.append(score_)
-        loss_ = clf_new.loss(X_test, y_test)
-        performance2.append(loss_)
-    # loc_best_params_score = np.argwhere((np.max(performance) == performance))
-    # min_loss = np.min(np.array(performance2)[loc_best_params_score])
-    # breakpoint()
-    loc_best = np.argmax(performance)
-    # loc_best = np.argwhere(performance2 == min_loss)[0][-1]
-    theta1 = params[loc_best]
-    clf_new.theta1 = theta1
-    theta2 = 1 / (1 - 1 / theta1)
-    clf_new.theta2 = theta2
-    clf_new.model_prepared = False
-    clf_new.fit(X, y)
+    kf = KFold(n_splits=n_folds, shuffle=True, random_state=seed)
 
-    return clf_new
+    scores = []
+    for theta1 in theta1_grid:
+        theta2 = theta2_from_theta1(theta1)
+
+        fold_scores = []
+        for train_idx, val_idx in kf.split(X):
+            X_tr, y_tr = X[train_idx], y[train_idx]
+            X_val, y_val = X[val_idx], y[val_idx]
+
+            # fresh model each fold (avoid state leakage)
+            model = copy.deepcopy(clf)
+            model.theta1 = float(theta1)
+            model.theta2 = float(theta2)
+            model.model_prepared = False
+            model.verbose = False
+
+            model.fit(X_tr, y_tr)
+
+            if metric == "acc":
+                fold_scores.append(model.score(X_val, y_val))
+            elif metric == "loss":
+                fold_scores.append(model.loss(X_val, y_val))
+            else:
+                raise ValueError("metric must be 'acc' or 'loss'.")
+
+        scores.append(np.mean(fold_scores))
+
+    scores = np.array(scores)
+
+    if metric == "acc":
+        best_idx = int(np.argmax(scores))
+    else:
+        best_idx = int(np.argmin(scores))
+
+    best_theta1 = float(theta1_grid[best_idx])
+    best_theta2 = float(theta2_from_theta1(best_theta1))
+
+    # refit on full data with best theta
+    best_model = copy.deepcopy(clf)
+    best_model.theta1 = best_theta1
+    best_model.theta2 = best_theta2
+    best_model.model_prepared = False
+    best_model.verbose = False
+    best_model.fit(X, y)
+
+    return best_model

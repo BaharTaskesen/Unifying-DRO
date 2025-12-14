@@ -1,84 +1,143 @@
-import matplotlib.pyplot as plt
 import numpy as np
-from matplotlib.colors import ListedColormap
+from tqdm import tqdm
 from sklearn.model_selection import train_test_split
+
 from models.MOT_Robust_CLF import MOT_Robust_CLF
+from utils.data_utils import prepare_data
+
+from matplotlib.colors import ListedColormap
 import matplotlib.pyplot as plt
 from matplotlib import colors as mcolors
-from tqdm import tqdm
-import numpy as np
-from utils.data_utils import prepare_data
-from matplotlib import rc
+from utils.plot_utils import plot_figure
 
 
-rc("font", family="serif")
-rc("text", usetex=True)
+BASE_SEED = 123
+np.random.seed(BASE_SEED)
+params = {
+    "text.usetex": True,
+    "font.size": 20,
+    "font.family": "serif",
+}
+plt.rcParams.update(params)
+
+
+
+N_total = 10000
+replications = 10
+d = 100
+n_features = d
+N_train = 2 * d
+N_train_all = [2 * d]  # n = 100 for the radius figure
+n_rs = 10
+p = "inf"
+noise_mag = 0.1
+beta_constrained = True
+nmbrs = np.arange(1, 10, 1)
+theta1s = np.hstack([1 + np.logspace(-5, 0, 10), nmbrs[2:], 10, 1e2, 1e3, 1e4, 1e5])
+sparsity = 10
+label_noise = 0.2
+
+
+splits = theta1s.shape[0]
+mot_acc = np.zeros((splits, replications))
+c_r = 1
+def theta2_from_theta1(theta1, big_M=1e6):
+    # Enforce 1/theta1 + 1/theta2 = 1 safely
+    if theta1 <= 1.0 + 1e-12:
+        return float(big_M)
+    return float(theta1 / (theta1 - 1.0))
+
+# -----------------------------
+# Monte Carlo loop
+# -----------------------------
+for rep in tqdm(range(replications), desc="theta sweep MC"):
+    # fresh dataset each replication
+    np.random.seed(BASE_SEED + rep)
+
+    X, y = prepare_data(
+        d=n_features,
+        N=N_total,
+        sparse_beta=True,
+        sparsity_degree=sparsity,
+        noise_mag=noise_mag,
+        label_noise=label_noise,
+        beta_constrained=beta_constrained
+    )
+
+    # reproducible split with exact size
+    X_train, X_test, y_train, y_test = train_test_split(
+        X,
+        y,
+        train_size=N_train,
+        test_size=N_total - N_train,
+        shuffle=True,
+        random_state=BASE_SEED + 10_000 + rep,
+    )
+
+    for i, theta1 in enumerate(theta1s):
+        clf_MOT = MOT_Robust_CLF(fit_intercept=True, theta1=1.0, theta2=1.0, p=p, verbose=False)
+        clf_MOT.c_r = float(c_r)
+
+        clf_MOT.theta1 = float(theta1)
+        clf_MOT.theta2 = theta2_from_theta1(float(theta1))
+
+        clf_MOT.model_prepared = False
+        clf_MOT.fit(X_train, y_train)
+
+        mot_acc[i, rep] = clf_MOT.score(X_test, y_test)
+
+# save once
+np.savez(
+    f"results/theta_performance_d_{n_features}_N_{N_train}_p_{p}_reps_{replications}.npz",
+    d=n_features,
+    radius=c_r,
+    sparsity=sparsity,
+    noise_mag=noise_mag,
+    mot_acc=mot_acc,
+    theta1s=theta1s,
+)
+
+
 
 cm_piyg = plt.cm.PiYG
 cm_bright = ListedColormap(["#b30065", "#178000"])
 colors = dict(mcolors.BASE_COLORS, **mcolors.CSS4_COLORS)
-################################################################################
-
-#### Data
-np.random.seed(0)
-
-N_train = 100  # 784  # , 500, 1000]  #  [100]  # , 1000]  # , 2000]
-
-N_total = 10000
-replications = 10  # number of independent runs
 
 
-p = "inf"
-n_rs = 10  # discretization of radius
+mot_color = colors["red"]
+wass_color = colors["limegreen"]
+kl_color = colors["maroon"]
+
+fig, axis = plt.subplots(1, 1)
+plot_figure(axis, theta1s[:-2], mot_acc[:-2], color=kl_color)
+
+# axis.legend()
+
+plt.grid(alpha=0.2)
+# plt.title("Out-of-sample correct classification rate $n={}$".format(N))
+plt.ylabel("CCR")
+plt.xlabel(r"$\theta_1$")
+plt.xscale("log")
+
+plt.grid(True, which="both", alpha=0.2)
+name_file = "theta_performance"
+save_format = "pdf"
+
+save_name_format = "_d_{}_N_{}_p_{}_reps_{}."
+
+plt.show()
 
 
-################################################################################
-# theta1s = np.logspace(0, 5, splits)
-nmbrs = np.arange(1, 10, 1)
-theta1s = np.hstack([1 + np.logspace(-5, 0, 10), nmbrs[2:], 10, 1e2, 1e3, 1e4, 1e5])
-################################################################################
-c_r = 1e-1 * 5
-
-n_features = N_train  
-splits = theta1s.shape[0]
-sparsity = 1
-
-X, y = prepare_data(d=n_features, N=N_total, sparse_beta=True, sparsity_degree=sparsity, noise_mag=0.1)
-mot_acc = np.zeros([splits, replications])
-
-
-for rep in tqdm(range(replications)):
-    SEED = rep
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, train_size=N_train / X.shape[0]
-    )
-    clf_MOT = MOT_Robust_CLF(fit_intercept=True, theta1=1, theta2=1, p=p, verbose=False)
-    clf_MOT.c_r = c_r
-    for i, theta1 in enumerate(theta1s):
-        clf_MOT.theta1 = theta1
-        if theta1 == 1:
-            theta2 = max(theta1s)
-            print("corner")
-        elif theta1 == max(theta1s):
-            theta2 = 1
-            print("corner")
-        else:
-            theta2 = 1 / (1 - 1 / theta1)
-        clf_MOT.theta2 = theta2
-        clf_MOT.model_prepared = False
-        clf_MOT.fit(X_train, y_train)
-        perf = clf_MOT.score(X_test, y_test)
-        mot_acc[i, rep] = perf
-
-    np.savez(
-        "results/NEW_theta_performance_theta_d_{}_N_{}_p_{}_reps_{}.npz".format(
-            n_features,
-            N_train,
-            p,
-            replications,
-        ),
-        d=n_features,
-        radius=c_r,
-        mot_acc=mot_acc,
-        theta1s=theta1s,
-    )
+fig.savefig(
+    (
+        "figures/theta_acc_test_beta_constrained_{}" + name_file + save_name_format + save_format
+    ).format(
+        beta_constrained,
+        d,
+        N_train,
+        p,
+        replications,
+    ),
+    format=save_format,
+    bbox_inches="tight",
+)

@@ -2,21 +2,16 @@ import numpy as np
 import cvxpy as cp
 
 
-def logSumExp(ns):
-    max = np.max(ns)
-    ds = ns - max
-    sumOfExp = np.exp(ds)
-    return max + np.log(sumOfExp)
-
 
 class WASS_Robust_CLF:
-    def __init__(self, fit_intercept=False, c_r=0, p=2, verbose=False):
+    def __init__(self, fit_intercept=False, c_r=0, p=2, beta_constrained=False, verbose=False):
         self.fit_intercept = fit_intercept
         self.c_r = c_r
         self.p = p
         self.verbose = verbose
         self.training_time = 0
         self.model_prepared = False
+        self.beta_constrained=beta_constrained
 
     def fit(self, X, y):
         if self.model_prepared:
@@ -37,15 +32,17 @@ class WASS_Robust_CLF:
             q = 2
         elif self.p == "inf":
             q = 1
-
-        cons = [
-            cp.norm2(self.beta) <= 1
-        ]  # Bounded SVM constraint from the original problem
+        cons = []
+        if self.beta_constrained:
+            cons.append(
+                cp.norm2(self.beta) <= 1
+            )  
 
         self.obj = 1 / N_train * cp.sum(
             cp.pos(1 - cp.multiply(y.flatten(), self.beta.T @ X.T + self.b))
         ) + self.r * cp.norm(self.beta, q)
         self.problem = cp.Problem(cp.Minimize(self.obj), cons)
+
         self.model_prepared = True
 
     def param_fit(self):
@@ -53,7 +50,7 @@ class WASS_Robust_CLF:
         self.r.value = self.c_r
         self.problem.solve(
             solver=cp.MOSEK,
-            mosek_params={"MSK_DPAR_INTPNT_CO_TOL_REL_GAP": 1e-6},
+            mosek_params={"MSK_DPAR_INTPNT_CO_TOL_REL_GAP": 1e-8},
             verbose=self.verbose,
         )
         self.coef_ = self.beta.value
@@ -80,5 +77,5 @@ class WASS_Robust_CLF:
     def score(self, X, y):
         # calculate accuracy of the given test data set
         predictions = self.predict(X)
-        acc = np.mean([predictions.flatten() == y.flatten()])
+        acc = float(np.mean(predictions.reshape(-1) == y.reshape(-1)))
         return acc
