@@ -23,8 +23,10 @@ class ExpConfig:
     p: str = "inf"
     noise_mag: float = 0.1
     sparsity: int = max([int(d / 2), 1])
-    label_noise: float = 0.2
+    label_noise: float = 0.0
     beta_constrained: bool = False
+    beta_regularized: bool = True
+
 
     # grid for the radius 
     c_rs_start_exp: float = -5
@@ -62,6 +64,7 @@ class ExpConfig:
         bc_tag = "bc1" if self.beta_constrained else "bc0"
         return (
             f"beta_constrained_{self.beta_constrained}"
+            f"_beta_regularized_{self.beta_regularized}"
             f"_radius_d{self.d}"
             f"_N{self.n_total}"
             f"_train{','.join(map(str, self.n_train_all))}"

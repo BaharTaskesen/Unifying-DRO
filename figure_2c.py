@@ -35,13 +35,13 @@ def main():
     ensure_dir(out_npz_dir)
     ensure_dir(out_pdf_dir)
 
-    run_name = make_run_name("n_over_dx_" + cfg.tag())
+    run_name = make_run_name("_n_over_dx_" + cfg.tag())
     save_config_json(to_jsonable_dict(cfg), out_npz_dir, run_name)
 
     np.random.seed(cfg.base_seed)
 
     # build N_train list: [d, 2d, 3d, 4d, 5d]
-    n_train_all = tuple(int(cfg.d * m) for m in (1, 2, 3, 4, 5))
+    n_train_all = tuple(int(cfg.d * m) for m in (1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
 
     # aggregated containers: for each N_train we store best over radii per replication
     best_kl = []

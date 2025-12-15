@@ -4,11 +4,12 @@ import cvxpy as cp
 
 
 class WASS_Robust_CLF:
-    def __init__(self, fit_intercept=False, c_r=0, p=2, beta_constrained=False, verbose=False):
+    def __init__(self, fit_intercept=False, c_r=0, p=2, beta_constrained=False, beta_regularized=True, verbose=False):
         self.fit_intercept = fit_intercept
         self.c_r = c_r
         self.p = p
         self.verbose = verbose
+        self.beta_regularized = beta_regularized
         self.training_time = 0
         self.model_prepared = False
         self.beta_constrained=beta_constrained
@@ -40,7 +41,7 @@ class WASS_Robust_CLF:
 
         self.obj = 1 / N_train * cp.sum(
             cp.pos(1 - cp.multiply(y.flatten(), self.beta.T @ X.T + self.b))
-        ) + self.r * cp.norm(self.beta, q)
+        ) + self.r * cp.norm(self.beta, q) + 1e-3 * cp.norm2(self.beta)
         self.problem = cp.Problem(cp.Minimize(self.obj), cons)
 
         self.model_prepared = True

@@ -3,6 +3,7 @@ from tqdm import tqdm
 from sklearn.model_selection import train_test_split
 
 from models.MOT_Robust_CLF import MOT_Robust_CLF
+from models.WASS_Robust_CLF import WASS_Robust_CLF
 from utils.data_utils import prepare_data
 
 from matplotlib.colors import ListedColormap
@@ -39,13 +40,14 @@ label_noise = 0.2
 
 
 splits = theta1s.shape[0]
-mot_acc = np.zeros((splits, replications))
+mot_acc = np.zeros((splits+1, replications))
 c_r = 1
 def theta2_from_theta1(theta1, big_M=1e6):
     # Enforce 1/theta1 + 1/theta2 = 1 safely
     if theta1 <= 1.0 + 1e-12:
         return float(big_M)
     return float(theta1 / (theta1 - 1.0))
+theta1s = np.hstack([[1], theta1s])
 
 # -----------------------------
 # Monte Carlo loop
@@ -73,8 +75,13 @@ for rep in tqdm(range(replications), desc="theta sweep MC"):
         shuffle=True,
         random_state=BASE_SEED + 10_000 + rep,
     )
-
     for i, theta1 in enumerate(theta1s):
+        if theta1 == 1:
+            clf = WASS_Robust_CLF(fit_intercept=True, p=p, verbose=False)
+            clf.c_r = float(c_r)
+            clf.fit(X_train, y_train)
+            mot_acc[i, rep] = clf.score(X_test, y_test)
+
         clf_MOT = MOT_Robust_CLF(fit_intercept=True, theta1=1.0, theta2=1.0, p=p, verbose=False)
         clf_MOT.c_r = float(c_r)
 

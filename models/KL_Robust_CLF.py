@@ -7,8 +7,9 @@ loss_fcn = lambda beta, X, y: cp.pos(1 - y * beta.T @ X)
 
 
 class KL_Robust_CLF:
-    def __init__(self, fit_intercept=False, c_r=0, beta_constrained=False, verbose=False):
+    def __init__(self, fit_intercept=False, c_r=0, beta_constrained=False, beta_regularization=True, verbose=False):
         self.fit_intercept = fit_intercept
+        self.beta_regularization = beta_regularization
         self.c_r = c_r
         self.verbose = verbose
         self.beta_constrained=beta_constrained
@@ -55,7 +56,7 @@ class KL_Robust_CLF:
             )
             cons.append(epig_[i] >= cp.pos(1 - y[i] * (self.beta.T @ X[i, :] + self.b)))
 
-        self.obj = self.lambda_ * (self.r - np.log(N_train)) + t
+        self.obj = self.lambda_ * (self.r - np.log(N_train)) + t + 1e-3 * cp.norm2(self.beta)
 
         self.problem = cp.Problem(cp.Minimize(self.obj), cons)
         self.model_prepared = True

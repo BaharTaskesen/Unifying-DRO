@@ -14,7 +14,7 @@ def fit_hinge_erm_cvx(X, y, fit_intercept=True, beta_constrained=False, eps=1e-8
     else:
         cons = []
     hinge = cp.pos(1 - cp.multiply(y, X @ beta + b))
-    obj = cp.Minimize(cp.sum(hinge) / n + eps * cp.sum_squares(beta))  # eps picks a stable minimizer
+    obj = cp.Minimize(cp.sum(hinge) / n + eps * cp.sum_squares(beta) + 1e-3 * cp.norm2(beta))  # eps picks a stable minimizer
     prob = cp.Problem(obj, constraints=cons)
     prob.solve(solver=cp.MOSEK,  mosek_params={"MSK_DPAR_INTPNT_CO_TOL_REL_GAP": 1e-8}, verbose=False)
 

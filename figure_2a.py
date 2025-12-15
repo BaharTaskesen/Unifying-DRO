@@ -18,9 +18,7 @@ from models.KL_Robust_CLF import KL_Robust_CLF
 # if you use this helper
 from models.EMP_CLF import fit_hinge_erm_cvx
 
-""""
-NOTE that MOT's theta value is not tuned
-"""
+
 def main():
     cfg = ExpConfig()
     c_rs, theta1s = cfg.build_grids()

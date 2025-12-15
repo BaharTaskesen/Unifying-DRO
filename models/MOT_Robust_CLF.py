@@ -4,7 +4,7 @@ import time
 
 
 class MOT_Robust_CLF:
-    def __init__(self, fit_intercept=False, theta1=1.0, theta2=1.0, c_r=0.0, p=2, beta_constrained=False, verbose=False):
+    def __init__(self, fit_intercept=False, theta1=1.0, theta2=1.0, c_r=0.0, p=2, beta_constrained=False, beta_regularization=True, verbose=False):
         self.fit_intercept = fit_intercept
         self.theta1 = float(theta1)
         self.theta2 = float(theta2)
@@ -12,6 +12,7 @@ class MOT_Robust_CLF:
         self.p = p
         self.verbose = verbose
         self.beta_constrained = beta_constrained
+        self.bebeta_regularization = beta_regularization
 
         self.model_prepared = False
         self.model_building_time = 0.0
@@ -77,7 +78,7 @@ class MOT_Robust_CLF:
         cons += [cp.sum(eta) / n <= self.lambda_ * self.theta2_par]
 
         # objective
-        obj = cp.Minimize(self.r * self.lambda_ + t)
+        obj = cp.Minimize(self.r * self.lambda_ + t+ 1e-3 * cp.norm2(self.beta))
 
         self.problem = cp.Problem(obj, cons)
         self._t = t

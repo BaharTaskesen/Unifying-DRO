@@ -49,7 +49,10 @@ https://www.mosek.com/products/academic-licenses/
 
 ---
 ## Reproducing Experiments
+The configuration of the experiments can be adjusted via ./cofigs/exp_radius.py.
+
 Each main experiment corresponds to one Python script:
+
 | Figure / Task           | Script / Notebook          | Description                                                              |
 |-------------------------|----------------------------|--------------------------------------------------------------------------|
 | **Fig. 1**              | `figure_1.py`              | SVM classification example and worst case distribution                   |
