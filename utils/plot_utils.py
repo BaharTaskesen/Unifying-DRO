@@ -80,7 +80,7 @@ def plot_results1(
 
     plot_figure(axis, c_rs, results["kl_acc"], color=kl_color, linestyle='dashed', label="Kullback-Leibler")
     plot_figure(axis, c_rs, results["wass_acc"], color=wass_color, linestyle='dashdot', label="Wasserstein")
-    plot_figure(axis, c_rs, results["mot_acc"], color=mot_color, label="MOT")
+    plot_figure(axis, c_rs, results["mot_acc"], color=mot_color, label="Joint $\phi$-divergence\n and OT discrepancy")
 
     plt.ylabel("CCR")
     plt.xlabel("$r$")
@@ -90,7 +90,7 @@ def plot_results1(
         svm_acc_mat = np.repeat(svm_acc, repeats=len(c_rs), axis=0)  # (n_rs, replications)
 
         plot_figure(axis, c_rs, svm_acc_mat, color=colors["black"], label="Empirical SVM")
-    axis.legend(loc="upper left")
+    axis.legend(loc="lower left", fontsize=14)
         # Force log scale on the axis object
     axis.set_xscale("log")
 
